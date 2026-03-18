@@ -1,0 +1,4 @@
+from app.models.user import User
+from app.models.course import Course, Lesson, UserProgress
+
+__all__ = ["User", "Course", "Lesson", "UserProgress"]
