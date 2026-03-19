@@ -1,8 +1,50 @@
 # 🐍 Python 学习平台 - 项目总览
 
-**最后更新**: 2026-03-18  
-**当前状态**: 🟡 开发中  
-**完成度**: ~60%
+**最后更新**: 2026-03-19 11:30  
+**当前状态**: 🟢 开发中 (本地 + ECS 就绪)  
+**完成度**: ~70%
+
+---
+
+## 🔥 最新消息 (2026-03-19)
+
+✅ **离线开发模式就绪** - 无需 Docker，现在就能开始开发！  
+✅ **ECS 部署方案就绪** - 阿里云 ECS 配置完成，随时可部署！  
+✅ **一键启动脚本** - 30 秒启动开发环境！
+
+---
+
+## 🚀 快速开始 (3 选 1)
+
+### 选项 1: 本地开发 (推荐今天使用) ⭐
+
+**无需网络，立即开始**:
+```bash
+start_all.bat
+```
+
+📖 详细指南：[QUICK_START_TODAY.md](./QUICK_START_TODAY.md)
+
+---
+
+### 选项 2: 部署到 ECS (推荐明天使用)
+
+**公网访问，分享测试**:
+```bash
+ssh root@8.131.100.101
+sudo bash ecs-deploy.sh
+```
+
+📖 详细指南：[deploy/ECS_DEPLOY_GUIDE.md](./deploy/ECS_DEPLOY_GUIDE.md)
+
+---
+
+### 选项 3: 了解项目
+
+**先看文档再决定**:
+- [今日总结](./TODAY_SUMMARY.md) - 了解最新进展
+- [产品引擎设计](./PRODUCT_ENGINE.md) - 核心理念
+- [项目状态](./PROJECT_STATUS.md) - 当前进度
 
 ---
 
@@ -134,7 +176,40 @@
 
 ## 🚀 快速启动
 
-### 方式一：Docker Compose (推荐)
+### ⚠️ 网络受限？
+
+**如果你无法访问 Docker Hub (被墙/网络限制)** → 使用离线开发模式
+
+📖 详细指南：[OFFLINE_DEV_GUIDE.md](./OFFLINE_DEV_GUIDE.md)
+
+---
+
+### 方式一：离线模式 (无需 Docker) ⭐ 推荐
+
+**Windows 一键启动**:
+```bash
+start_all.bat
+```
+
+**手动启动**:
+```bash
+# 终端 1: 后端
+cd backend
+start_dev.bat
+
+# 终端 2: 前端
+cd frontend
+start_dev.bat
+```
+
+访问：
+- 前端：http://localhost:5173
+- 后端 API: http://localhost:8000
+- API 文档：http://localhost:8000/docs
+
+---
+
+### 方式二：Docker Compose (完整环境)
 
 ```bash
 cd infrastructure
@@ -146,9 +221,7 @@ docker-compose up -d
 - 后端 API: http://localhost:8000
 - API 文档：http://localhost:8000/docs
 
-### 方式二：本地开发
-
-参考 [QUICKSTART.md](./QUICKSTART.md)
+参考：[QUICKSTART.md](./QUICKSTART.md)
 
 ---
 

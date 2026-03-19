@@ -2,17 +2,65 @@
 
 ## 🚀 5 分钟启动开发环境
 
-### 前置要求
+### ⚠️ 重要：两种开发模式
 
-- Docker & Docker Compose
-- Node.js 18+ (本地开发前端)
-- Python 3.11+ (本地开发后端)
+| 模式 | 适用场景 | 网络需求 |
+|------|----------|----------|
+| **离线模式** | 网络受限/快速开发 | 仅首次下载依赖 |
+| **Docker 模式** | 完整环境/生产部署 | 需要访问 Docker Hub |
+
+**网络受限？→ 看 [OFFLINE_DEV_GUIDE.md](./OFFLINE_DEV_GUIDE.md)**
 
 ---
 
-## 方式一：Docker Compose (推荐)
+## 方式一：离线模式 (无需 Docker)
 
-一键启动所有服务：
+### 前置要求
+
+- Python 3.11+
+- Node.js 18+
+
+### Windows 一键启动
+
+```bash
+# 双击运行
+start_all.bat
+```
+
+### 或手动启动
+
+```bash
+# 终端 1: 启动后端
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+alembic revision --autogenerate -m "Initial migration"
+alembic upgrade head
+uvicorn main:app --reload --port 8000
+
+# 终端 2: 启动前端
+cd frontend
+npm install
+npm run dev
+```
+
+启动后访问：
+- **前端**: http://localhost:5173
+- **后端 API**: http://localhost:8000
+- **API 文档**: http://localhost:8000/docs
+
+---
+
+## 方式二：Docker Compose (完整环境)
+
+### 前置要求
+
+- Docker & Docker Compose
+- Node.js 18+ (可选，用于本地前端开发)
+- Python 3.11+ (可选，用于本地后端开发)
+
+### 一键启动
 
 ```bash
 cd infrastructure
