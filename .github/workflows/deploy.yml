@@ -23,13 +23,15 @@ jobs:
           script: |
             set -e
             
-            # 硬编码仓库地址，不依赖变量
+            # 硬编码仓库地址，100% 可靠
             REPO_URL="lina0437/python-learning-platform"
             ECS_HOST="${{ secrets.ECS_HOST }}"
+            ECS_USER="${{ secrets.ECS_USER }}"
             
             echo "=== Starting Deployment ==="
             echo "REPO_URL: ${REPO_URL}"
             echo "ECS_HOST: ${ECS_HOST}"
+            echo "ECS_USER: ${ECS_USER}"
             
             if [ ! -d "/opt/python-learning" ]; then
               sudo mkdir -p /opt/python-learning
