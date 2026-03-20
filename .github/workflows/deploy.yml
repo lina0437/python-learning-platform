@@ -2,8 +2,7 @@ name: Deploy to ECS
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -13,50 +12,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to ECS
-        uses: appleboy/ssh-action@master
+      - name: Deploy to ECS via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           script: |
-            #!/bin/bash
             set -e
-            
             echo "Starting deployment..."
             
-            # Create directory if not exists
             if [ ! -d "/opt/python-learning" ]; then
               sudo mkdir -p /opt/python-learning
             fi
             cd /opt/python-learning
             
-            # Clone or pull code
             if [ ! -d ".git" ]; then
-              echo "First deployment, cloning repository..."
+              echo "Cloning repository..."
               git clone https://github.com/${{ github.repository }}.git .
             else
-              echo "Updating code..."
+              echo "Pulling latest code..."
               git pull origin main
             fi
             
-            # Create .env if not exists
             if [ ! -f ".env" ]; then
-              echo "Creating environment file..."
+              echo "Creating .env file..."
               DB_PASS=$(openssl rand -hex 16)
               SECRET=$(openssl rand -hex 32)
               echo "DB_PASSWORD=$DB_PASS" > .env
               echo "SECRET_KEY=$SECRET" >> .env
               echo "SERVER_IP=${{ secrets.ECS_HOST }}" >> .env
-              echo "IMPORTANT: Save these credentials!"
+              echo "Save these credentials!"
               cat .env
             fi
             
-            # Create docker-compose.yml
-            echo "Creating Docker Compose configuration..."
-            cat > docker-compose.yml << 'EOF'
+            echo "Creating docker-compose.yml..."
+            cat > docker-compose.yml << 'COMPOSE_END'
 version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -75,7 +67,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: python_learning_redis
@@ -84,7 +75,6 @@ services:
       - redis_data:/data
     networks:
       - app-network
-
   backend:
     build:
       context: ./backend
@@ -101,7 +91,6 @@ services:
         condition: service_healthy
     networks:
       - app-network
-
   frontend:
     build:
       context: ./frontend
@@ -112,7 +101,6 @@ services:
       - backend
     networks:
       - app-network
-
   nginx:
     image: nginx:alpine
     container_name: python_learning_nginx
@@ -126,23 +114,19 @@ services:
       - backend
     networks:
       - app-network
-
 volumes:
   postgres_data:
   redis_data:
-
 networks:
   app-network:
     driver: bridge
-EOF
+COMPOSE_END
             
-            # Create nginx.conf
-            echo "Creating Nginx configuration..."
-            cat > nginx.conf << 'EOF'
+            echo "Creating nginx.conf..."
+            cat > nginx.conf << 'NGINX_END'
 server {
     listen 80;
     server_name _;
-
     location / {
         proxy_pass http://frontend:80;
         proxy_set_header Host $host;
@@ -150,7 +134,6 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
     location /api {
         proxy_pass http://backend:8000;
         proxy_set_header Host $host;
@@ -158,7 +141,6 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
     location /docs {
         proxy_pass http://backend:8000/docs;
         proxy_set_header Host $host;
@@ -166,33 +148,25 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
     location /health {
         proxy_pass http://backend:8000/health;
         access_log off;
     }
 }
-EOF
+NGINX_END
             
-            # Build and start services
-            echo "Building Docker images..."
+            echo "Building and starting services..."
             docker-compose build
-            
-            echo "Starting services..."
             docker-compose up -d
             
-            echo "Waiting for services to start..."
+            echo "Waiting for services..."
             sleep 15
             
-            echo "Running database migrations..."
+            echo "Running migrations..."
             docker-compose exec -T backend alembic upgrade head || true
             
             echo "Creating sample data..."
             docker-compose exec -T backend python scripts/seed_courses.py || true
             
             echo "Deployment completed!"
-            echo "========================================"
-            echo "Access URLs:"
-            echo "  Frontend: http://${{ secrets.ECS_HOST }}"
-            echo "  API Docs: http://${{ secrets.ECS_HOST }}/docs"
-            echo "========================================"
+            echo "Access: http://${{ secrets.ECS_HOST }}"
