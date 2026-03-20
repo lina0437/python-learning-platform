@@ -2,17 +2,17 @@ name: Deploy to ECS
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to ECS via SSH
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to ECS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.ECS_HOST }}
@@ -20,149 +20,113 @@ jobs:
           key: ${{ secrets.ECS_SSH_KEY }}
           script: |
             set -e
-            echo "Starting deployment..."
-            
-            if [ ! -d "/opt/python-learning" ]; then
-              sudo mkdir -p /opt/python-learning
-            fi
-            cd /opt/python-learning
-            
-            if [ ! -d ".git" ]; then
-              echo "Cloning repository..."
-              git clone https://github.com/${{ github.repository }}.git .
-            else
-              echo "Pulling latest code..."
-              git pull origin main
-            fi
-            
-            if [ ! -f ".env" ]; then
-              echo "Creating .env file..."
-              DB_PASS=$(openssl rand -hex 16)
-              SECRET=$(openssl rand -hex 32)
-              echo "DB_PASSWORD=$DB_PASS" > .env
-              echo "SECRET_KEY=$SECRET" >> .env
-              echo "SERVER_IP=${{ secrets.ECS_HOST }}" >> .env
-              echo "Save these credentials!"
-              cat .env
-            fi
-            
-            echo "Creating docker-compose.yml..."
-            echo "version: '3.8'" > docker-compose.yml
-            echo "services:" >> docker-compose.yml
-            echo "  postgres:" >> docker-compose.yml
-            echo "    image: postgres:15-alpine" >> docker-compose.yml
-            echo "    container_name: python_learning_db" >> docker-compose.yml
-            echo "    restart: always" >> docker-compose.yml
-            echo "    environment:" >> docker-compose.yml
-            echo "      POSTGRES_USER: postgres" >> docker-compose.yml
-            echo "      POSTGRES_PASSWORD: \${DB_PASSWORD:-python123}" >> docker-compose.yml
-            echo "      POSTGRES_DB: python_learning" >> docker-compose.yml
-            echo "    volumes:" >> docker-compose.yml
-            echo "      - postgres_data:/var/lib/postgresql/data" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - app-network" >> docker-compose.yml
-            echo "    healthcheck:" >> docker-compose.yml
-            echo "      test: [\"CMD-SHELL\", \"pg_isready -U postgres\"]" >> docker-compose.yml
-            echo "      interval: 5s" >> docker-compose.yml
-            echo "      timeout: 5s" >> docker-compose.yml
-            echo "      retries: 5" >> docker-compose.yml
-            echo "  redis:" >> docker-compose.yml
-            echo "    image: redis:7-alpine" >> docker-compose.yml
-            echo "    container_name: python_learning_redis" >> docker-compose.yml
-            echo "    restart: always" >> docker-compose.yml
-            echo "    volumes:" >> docker-compose.yml
-            echo "      - redis_data:/data" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - app-network" >> docker-compose.yml
-            echo "  backend:" >> docker-compose.yml
-            echo "    build:" >> docker-compose.yml
-            echo "      context: ./backend" >> docker-compose.yml
-            echo "      dockerfile: Dockerfile" >> docker-compose.yml
-            echo "    container_name: python_learning_backend" >> docker-compose.yml
-            echo "    restart: always" >> docker-compose.yml
-            echo "    environment:" >> docker-compose.yml
-            echo "      - DATABASE_URL=postgresql://postgres:\${DB_PASSWORD:-python123}@postgres:5432/python_learning" >> docker-compose.yml
-            echo "      - REDIS_URL=redis://redis:6379" >> docker-compose.yml
-            echo "      - SECRET_KEY=\${SECRET_KEY:-prod-secret-key}" >> docker-compose.yml
-            echo "      - CORS_ORIGINS=[\"http://\${SERVER_IP:-8.131.100.101}\"]" >> docker-compose.yml
-            echo "    depends_on:" >> docker-compose.yml
-            echo "      postgres:" >> docker-compose.yml
-            echo "        condition: service_healthy" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - app-network" >> docker-compose.yml
-            echo "  frontend:" >> docker-compose.yml
-            echo "    build:" >> docker-compose.yml
-            echo "      context: ./frontend" >> docker-compose.yml
-            echo "      dockerfile: Dockerfile" >> docker-compose.yml
-            echo "    container_name: python_learning_frontend" >> docker-compose.yml
-            echo "    restart: always" >> docker-compose.yml
-            echo "    depends_on:" >> docker-compose.yml
-            echo "      - backend" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - app-network" >> docker-compose.yml
-            echo "  nginx:" >> docker-compose.yml
-            echo "    image: nginx:alpine" >> docker-compose.yml
-            echo "    container_name: python_learning_nginx" >> docker-compose.yml
-            echo "    restart: always" >> docker-compose.yml
-            echo "    ports:" >> docker-compose.yml
-            echo "      - \"80:80\"" >> docker-compose.yml
-            echo "    volumes:" >> docker-compose.yml
-            echo "      - ./nginx.conf:/etc/nginx/conf.d/default.conf" >> docker-compose.yml
-            echo "    depends_on:" >> docker-compose.yml
-            echo "      - frontend" >> docker-compose.yml
-            echo "      - backend" >> docker-compose.yml
-            echo "    networks:" >> docker-compose.yml
-            echo "      - app-network" >> docker-compose.yml
-            echo "volumes:" >> docker-compose.yml
-            echo "  postgres_data:" >> docker-compose.yml
-            echo "  redis_data:" >> docker-compose.yml
-            echo "networks:" >> docker-compose.yml
-            echo "  app-network:" >> docker-compose.yml
-            echo "    driver: bridge" >> docker-compose.yml
-            
-            echo "Creating nginx.conf..."
-            echo "server {" > nginx.conf
-            echo "    listen 80;" >> nginx.conf
-            echo "    server_name _;" >> nginx.conf
-            echo "    location / {" >> nginx.conf
-            echo "        proxy_pass http://frontend:80;" >> nginx.conf
-            echo "        proxy_set_header Host \$host;" >> nginx.conf
-            echo "        proxy_set_header X-Real-IP \$remote_addr;" >> nginx.conf
-            echo "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;" >> nginx.conf
-            echo "        proxy_set_header X-Forwarded-Proto \$scheme;" >> nginx.conf
-            echo "    }" >> nginx.conf
-            echo "    location /api {" >> nginx.conf
-            echo "        proxy_pass http://backend:8000;" >> nginx.conf
-            echo "        proxy_set_header Host \$host;" >> nginx.conf
-            echo "        proxy_set_header X-Real-IP \$remote_addr;" >> nginx.conf
-            echo "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;" >> nginx.conf
-            echo "        proxy_set_header X-Forwarded-Proto \$scheme;" >> nginx.conf
-            echo "    }" >> nginx.conf
-            echo "    location /docs {" >> nginx.conf
-            echo "        proxy_pass http://backend:8000/docs;" >> nginx.conf
-            echo "        proxy_set_header Host \$host;" >> nginx.conf
-            echo "        proxy_set_header X-Real-IP \$remote_addr;" >> nginx.conf
-            echo "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;" >> nginx.conf
-            echo "        proxy_set_header X-Forwarded-Proto \$scheme;" >> nginx.conf
-            echo "    }" >> nginx.conf
-            echo "    location /health {" >> nginx.conf
-            echo "        proxy_pass http://backend:8000/health;" >> nginx.conf
-            echo "        access_log off;" >> nginx.conf
-            echo "    }" >> nginx.conf
-            echo "}" >> nginx.conf
-            
-            echo "Building and starting services..."
+            cd /opt/python-learning || (sudo mkdir -p /opt/python-learning && cd /opt/python-learning)
+            [ ! -d ".git" ] && git clone https://github.com/${{ github.repository }}.git . || git pull origin main
+            [ ! -f ".env" ] && (DB_PASS=$(openssl rand -hex 16) && echo "DB_PASSWORD=$DB_PASS" > .env && echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env && echo "SERVER_IP=${{ secrets.ECS_HOST }}" >> .env)
+            echo "version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: python_learning_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-python123}
+      POSTGRES_DB: python_learning
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [\"CMD-SHELL\", \"pg_isready -U postgres\"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name: python_learning_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: python_learning_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-python123}@postgres:5432/python_learning
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-prod-secret-key}
+      - CORS_ORIGINS=[\"http://${SERVER_IP:-8.131.100.101}\"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: python_learning_frontend
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - app-network
+  nginx:
+    image: nginx:alpine
+    container_name: python_learning_nginx
+    restart: always
+    ports:
+      - \"80:80\"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app-network
+volumes:
+  postgres_data:
+  redis_data:
+networks:
+  app-network:
+    driver: bridge" > docker-compose.yml
+            echo "server {
+    listen 80;
+    server_name _;
+    location / {
+        proxy_pass http://frontend:80;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+    location /api {
+        proxy_pass http://backend:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+    location /docs {
+        proxy_pass http://backend:8000/docs;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+    location /health {
+        proxy_pass http://backend:8000/health;
+        access_log off;
+    }
+}" > nginx.conf
             docker-compose build
             docker-compose up -d
-            
-            echo "Waiting for services..."
             sleep 15
-            
-            echo "Running migrations..."
             docker-compose exec -T backend alembic upgrade head || true
-            
-            echo "Creating sample data..."
             docker-compose exec -T backend python scripts/seed_courses.py || true
-            
-            echo "Deployment completed!"
-            echo "Access: http://${{ secrets.ECS_HOST }}"
+            echo "Done! Access: http://${{ secrets.ECS_HOST }}"
