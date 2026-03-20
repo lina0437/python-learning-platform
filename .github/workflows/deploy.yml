@@ -6,11 +6,6 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  ECS_HOST: ${{ secrets.ECS_HOST }}
-  ECS_USER: ${{ secrets.ECS_USER }}
-  REPO_URL: ${{ github.repository }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -21,23 +16,33 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.ECS_HOST }}
-          username: ${{ env.ECS_USER }}
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           port: 22
           script: |
             set -e
+            
+            # 硬编码仓库地址，不依赖变量
+            REPO_URL="lina0437/python-learning-platform"
+            ECS_HOST="${{ secrets.ECS_HOST }}"
+            
             echo "=== Starting Deployment ==="
+            echo "REPO_URL: ${REPO_URL}"
+            echo "ECS_HOST: ${ECS_HOST}"
+            
             if [ ! -d "/opt/python-learning" ]; then
               sudo mkdir -p /opt/python-learning
             fi
             cd /opt/python-learning
+            
             if [ ! -d ".git" ]; then
-              git clone https://github.com/${REPO_URL}.git .
+              sudo git clone https://github.com/${REPO_URL}.git .
             else
-              git fetch origin main
-              git reset --hard origin/main
+              sudo git fetch origin main
+              sudo git reset --hard origin/main
             fi
+            
             if [ ! -f ".env" ]; then
               DB_PASS=$(openssl rand -hex 16)
               SECRET=$(openssl rand -hex 32)
@@ -47,12 +52,15 @@ jobs:
               echo "Save these credentials:"
               cat .env
             fi
+            
             curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/docker-compose.prod.yml -o docker-compose.yml || true
             curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/nginx.prod.conf -o nginx.conf || true
-            docker-compose build
-            docker-compose up -d
+            
+            sudo docker-compose build
+            sudo docker-compose up -d
             sleep 20
-            docker-compose exec -T backend alembic upgrade head || true
-            docker-compose exec -T backend python scripts/seed_courses.py || true
+            sudo docker-compose exec -T backend alembic upgrade head || true
+            sudo docker-compose exec -T backend python scripts/seed_courses.py || true
+            
             echo "=== Deployment Complete ==="
             echo "Access: http://${ECS_HOST}"
