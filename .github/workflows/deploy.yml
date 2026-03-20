@@ -20,14 +20,13 @@ jobs:
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           port: 22
+          command_timeout: 3600
           script: |
             set -e
             
-            # 硬编码仓库地址
             REPO_URL="lina0437/python-learning-platform"
             ECS_HOST="${{ secrets.ECS_HOST }}"
             
-            # 配置 Docker 镜像加速器 (解决网络问题)
             echo "Configuring Docker mirrors..."
             sudo mkdir -p /etc/docker
             sudo tee /etc/docker/daemon.json <<-'EOF'
