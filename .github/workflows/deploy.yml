@@ -6,18 +6,23 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  ECS_HOST: ${{ secrets.ECS_HOST }}
+  ECS_USER: ${{ secrets.ECS_USER }}
+  REPO_URL: ${{ github.repository }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to ECS via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.ECS_HOST }}
-          username: ${{ secrets.ECS_USER }}
+          host: ${{ env.ECS_HOST }}
+          username: ${{ env.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           port: 22
           script: |
@@ -28,22 +33,26 @@ jobs:
             fi
             cd /opt/python-learning
             if [ ! -d ".git" ]; then
-              git clone https://github.com/${{ github.repository }}.git .
+              git clone https://github.com/${REPO_URL}.git .
             else
               git fetch origin main
               git reset --hard origin/main
             fi
             if [ ! -f ".env" ]; then
-              echo "DB_PASSWORD=$(openssl rand -hex 16)" > .env
-              echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
-              echo "SERVER_IP=${{ secrets.ECS_HOST }}" >> .env
+              DB_PASS=$(openssl rand -hex 16)
+              SECRET=$(openssl rand -hex 32)
+              echo "DB_PASSWORD=${DB_PASS}" > .env
+              echo "SECRET_KEY=${SECRET}" >> .env
+              echo "SERVER_IP=${ECS_HOST}" >> .env
+              echo "Save these credentials:"
+              cat .env
             fi
-            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml -o docker-compose.yml || true
-            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/nginx.prod.conf -o nginx.conf || true
+            curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/docker-compose.prod.yml -o docker-compose.yml || true
+            curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/nginx.prod.conf -o nginx.conf || true
             docker-compose build
             docker-compose up -d
             sleep 20
             docker-compose exec -T backend alembic upgrade head || true
             docker-compose exec -T backend python scripts/seed_courses.py || true
             echo "=== Deployment Complete ==="
-            echo "Access: http://${{ secrets.ECS_HOST }}"
+            echo "Access: http://${ECS_HOST}"
