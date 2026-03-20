@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       - name: Deploy to ECS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -23,55 +23,27 @@ jobs:
           script: |
             set -e
             echo "=== Starting Deployment ==="
-            
-            # Navigate to app directory
             if [ ! -d "/opt/python-learning" ]; then
               sudo mkdir -p /opt/python-learning
-              echo "Created directory /opt/python-learning"
             fi
             cd /opt/python-learning
-            
-            # Clone or update code
             if [ ! -d ".git" ]; then
-              echo "First deployment - cloning repository..."
               git clone https://github.com/${{ github.repository }}.git .
             else
-              echo "Updating code..."
               git fetch origin main
               git reset --hard origin/main
             fi
-            
-            # Create .env if not exists
             if [ ! -f ".env" ]; then
-              echo "Creating .env file..."
               echo "DB_PASSWORD=$(openssl rand -hex 16)" > .env
               echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
               echo "SERVER_IP=${{ secrets.ECS_HOST }}" >> .env
-              echo "IMPORTANT - Save these credentials:"
-              cat .env
             fi
-            
-            # Download configuration files
-            echo "Downloading configuration files..."
-            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml -o docker-compose.yml || echo "Using existing docker-compose.yml"
-            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/nginx.prod.conf -o nginx.conf || echo "Using existing nginx.conf"
-            
-            # Build and start services
-            echo "Building Docker images..."
+            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.prod.yml -o docker-compose.yml || true
+            curl -sSL https://raw.githubusercontent.com/${{ github.repository }}/main/nginx.prod.conf -o nginx.conf || true
             docker-compose build
-            
-            echo "Starting services..."
             docker-compose up -d
-            
-            echo "Waiting for services to start..."
             sleep 20
-            
-            echo "Running database migrations..."
-            docker-compose exec -T backend alembic upgrade head || echo "Migration completed or skipped"
-            
-            echo "Creating sample data..."
-            docker-compose exec -T backend python scripts/seed_courses.py || echo "Sample data created or skipped"
-            
+            docker-compose exec -T backend alembic upgrade head || true
+            docker-compose exec -T backend python scripts/seed_courses.py || true
             echo "=== Deployment Complete ==="
-            echo "Access your application at: http://${{ secrets.ECS_HOST }}"
-            echo "API Documentation at: http://${{ secrets.ECS_HOST }}/docs"
+            echo "Access: http://${{ secrets.ECS_HOST }}"
