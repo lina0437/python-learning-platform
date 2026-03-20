@@ -23,15 +23,27 @@ jobs:
           script: |
             set -e
             
-            # 硬编码仓库地址，100% 可靠
+            # 硬编码仓库地址
             REPO_URL="lina0437/python-learning-platform"
             ECS_HOST="${{ secrets.ECS_HOST }}"
-            ECS_USER="${{ secrets.ECS_USER }}"
+            
+            # 配置 Docker 镜像加速器 (解决网络问题)
+            echo "Configuring Docker mirrors..."
+            sudo mkdir -p /etc/docker
+            sudo tee /etc/docker/daemon.json <<-'EOF'
+            {
+              "registry-mirrors": [
+                "https://docker.m.daocloud.io",
+                "https://docker.1panel.live"
+              ]
+            }
+            EOF
+            sudo systemctl daemon-reload
+            sudo systemctl restart docker
+            echo "Docker mirrors configured"
             
             echo "=== Starting Deployment ==="
             echo "REPO_URL: ${REPO_URL}"
-            echo "ECS_HOST: ${ECS_HOST}"
-            echo "ECS_USER: ${ECS_USER}"
             
             if [ ! -d "/opt/python-learning" ]; then
               sudo mkdir -p /opt/python-learning
@@ -51,17 +63,23 @@ jobs:
               echo "DB_PASSWORD=${DB_PASS}" > .env
               echo "SECRET_KEY=${SECRET}" >> .env
               echo "SERVER_IP=${ECS_HOST}" >> .env
-              echo "Save these credentials:"
-              cat .env
             fi
             
             curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/docker-compose.prod.yml -o docker-compose.yml || true
             curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/nginx.prod.conf -o nginx.conf || true
             
+            echo "Building Docker images..."
             sudo docker-compose build
+            
+            echo "Starting services..."
             sudo docker-compose up -d
+            
             sleep 20
+            
+            echo "Running migrations..."
             sudo docker-compose exec -T backend alembic upgrade head || true
+            
+            echo "Creating sample data..."
             sudo docker-compose exec -T backend python scripts/seed_courses.py || true
             
             echo "=== Deployment Complete ==="
