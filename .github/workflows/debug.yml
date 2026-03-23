@@ -1,0 +1,43 @@
+name: Debug ECS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug ECS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          port: 22
+          script: |
+            echo "=== 容器状态 ==="
+            docker compose -f /opt/python-learning/docker-compose.yml ps
+            
+            echo ""
+            echo "=== 后端日志 (最后 50 行) ==="
+            docker compose -f /opt/python-learning/docker-compose.yml logs --tail=50 backend
+            
+            echo ""
+            echo "=== Nginx 日志 (最后 20 行) ==="
+            docker compose -f /opt/python-learning/docker-compose.yml logs --tail=20 nginx
+            
+            echo ""
+            echo "=== 数据库日志 (最后 20 行) ==="
+            docker compose -f /opt/python-learning/docker-compose.yml logs --tail=20 postgres
+            
+            echo ""
+            echo "=== 测试后端连接 ==="
+            docker compose -f /opt/python-learning/docker-compose.yml exec -T backend curl -s http://localhost:8000/api/health || echo "后端无法访问"
+            
+            echo ""
+            echo "=== 磁盘空间 ==="
+            df -h
+            
+            echo ""
+            echo "=== 内存使用 ==="
+            free -h
