@@ -73,6 +73,9 @@ jobs:
             curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/docker-compose.prod.yml -o docker-compose.yml || true
             curl -sSL https://raw.githubusercontent.com/${REPO_URL}/main/nginx.prod.conf -o nginx.conf || true
             
+            echo "Stopping old services..."
+            sudo docker-compose down || true
+            
             echo "Building Docker images..."
             sudo docker-compose build
             
