@@ -41,6 +41,12 @@ jobs:
             sudo systemctl restart docker
             echo "Docker mirrors configured"
             
+            echo "Upgrading docker-compose to v2..."
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            docker-compose --version
+            echo "docker-compose upgraded"
+            
             echo "=== Starting Deployment ==="
             echo "REPO_URL: ${REPO_URL}"
             
