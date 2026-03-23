@@ -18,7 +18,8 @@ export default function LessonPage() {
       const result = await response.json()
       setOutput(result.output || result.error)
     } catch (error) {
-      setOutput('执行失败：' + error.message)
+      const message = error instanceof Error ? error.message : '未知错误'
+      setOutput('执行失败：' + message)
     } finally {
       setRunning(false)
     }
