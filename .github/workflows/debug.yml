@@ -15,31 +15,28 @@ jobs:
           key: ${{ secrets.ECS_SSH_KEY }}
           port: 22
           script: |
+            set -e
             cd /opt/python-learning
             
+            echo "=== 时间 ==="
+            date
+            
+            echo ""
+            echo "=== Git 状态 ==="
+            git log --oneline -3 || echo "Git 未初始化"
+            
+            echo ""
             echo "=== 容器状态 ==="
             docker-compose ps
             
             echo ""
-            echo "=== 后端日志 (最后 50 行) ==="
-            docker-compose logs --tail=50 backend
-            
-            echo ""
-            echo "=== Nginx 日志 (最后 20 行) ==="
-            docker-compose logs --tail=20 nginx
-            
-            echo ""
-            echo "=== 数据库日志 (最后 20 行) ==="
-            docker-compose logs --tail=20 postgres
+            echo "=== 所有容器日志 (最后 100 行) ==="
+            docker-compose logs --tail=100
             
             echo ""
             echo "=== 测试后端连接 ==="
-            docker-compose exec -T backend curl -s http://localhost:8000/api/health || echo "后端无法访问"
+            docker-compose exec -T backend curl -s http://localhost:8000/api/health 2>&1 || echo "后端无法访问"
             
             echo ""
-            echo "=== 磁盘空间 ==="
-            df -h
-            
-            echo ""
-            echo "=== 内存使用 ==="
-            free -h
+            echo "=== 检查端口 ==="
+            netstat -tlnp | grep -E ":(80|8000|5432)" || echo "端口未监听"
