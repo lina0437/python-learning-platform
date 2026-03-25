@@ -36,6 +36,18 @@ const dashboardData = {
     { id: 6, title: 'Python 自动化办公', students: 9850, revenue: 15670, rating: 4.9 },
     { id: 4, title: 'Python 爬虫开发实战', students: 5230, revenue: 17200, rating: 4.7 },
   ],
+  topCourses: [
+    { id: 1, title: 'Python 零基础入门', students: 12340, revenue: 24680, rating: 4.9 },
+    { id: 2, title: 'Python 数据分析实战', students: 8560, revenue: 25680, rating: 4.8 },
+    { id: 3, title: 'Python Web 开发全栈', students: 6420, revenue: 25800, rating: 4.9 },
+    { id: 6, title: 'Python 自动化办公', students: 9850, revenue: 15670, rating: 4.9 },
+    { id: 4, title: 'Python 爬虫开发实战', students: 5230, revenue: 17200, rating: 4.7 },
+  ],
+  completionDistribution: [
+    { name: '已完成', value: 65, color: '#10b981' },
+    { name: '学习中', value: 25, color: '#2563eb' },
+    { name: '未开始', value: 10, color: '#6b7280' },
+  ],
   pendingTasks: [
     { id: 1, type: 'review', title: '3 条新学员评价待回复', count: 3, urgent: false },
     { id: 2, type: 'question', title: '5 个课程问题待解答', count: 5, urgent: true },
@@ -168,9 +180,9 @@ export default function DashboardPage() {
       </div>
 
       {/* 图表区域 */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* 学员增长趋势 */}
-        <div className="card p-6">
+        <div className="card p-6 lg:col-span-2">
           <h3 className="text-lg font-bold text-neutral-900 mb-4">
             📈 学员增长趋势
           </h3>
@@ -250,6 +262,55 @@ export default function DashboardPage() {
                 <div className="text-sm font-medium text-neutral-900">
                   ¥{(item.revenue / 1000).toFixed(1)}k
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 课程完成率分布 */}
+        <div className="card p-6">
+          <h3 className="text-lg font-bold text-neutral-900 mb-4">
+            📊 课程完成率分布
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={dashboardData.completionDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {dashboardData.completionDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }} 
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 space-y-2">
+            {dashboardData.completionDistribution.map((item, index) => (
+              <div key={index} className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <div 
+                    className="w-3 h-3 rounded-full mr-2" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-neutral-600">{item.name}</span>
+                </div>
+                <span className="font-medium text-neutral-900">{item.value}%</span>
               </div>
             ))}
           </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import VideoUploader from './VideoUploader'
 
 interface Lesson {
   id: number
@@ -95,21 +96,12 @@ export default function LessonEditor({ lesson, onSave, onCancel }: LessonEditorP
               <label className="block text-sm font-medium text-neutral-700 mb-2">
                 视频上传
               </label>
-              <div className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer">
-                <div className="text-4xl mb-2">🎬</div>
-                <p className="text-sm text-neutral-600 mb-1">
-                  点击上传或拖拽视频到此处
-                </p>
-                <p className="text-xs text-neutral-500">
-                  支持格式：MP4, MOV, AVI | 最大大小：2GB | 建议：1080p, H.264 编码
-                </p>
-              </div>
-              {editedLesson.videoUrl && (
-                <div className="mt-4 p-3 bg-success-50 border border-success-200 rounded-lg">
-                  <p className="text-sm text-success-700">✓ 视频已上传</p>
-                  <p className="text-xs text-success-600 mt-1">{editedLesson.videoUrl}</p>
-                </div>
-              )}
+              <VideoUploader
+                onUploadComplete={(videoUrl) => {
+                  handleChange('videoUrl', videoUrl)
+                }}
+                maxSize={2048}
+              />
             </div>
           )}
 
