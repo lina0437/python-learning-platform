@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import ChapterEditor from '../../components/admin/ChapterEditor'
+import LessonEditor from '../../components/admin/LessonEditor'
 
 interface CourseFormData {
   title: string
@@ -433,15 +435,18 @@ export default function CourseEditPage() {
               <h3 className="text-lg font-bold text-neutral-900 mb-4">
                 课程内容管理
               </h3>
-              <div className="text-center py-12 bg-neutral-50 rounded-lg">
-                <div className="text-4xl mb-4">📚</div>
-                <p className="text-neutral-600 mb-4">
-                  课程内容编辑功能开发中...
-                </p>
-                <p className="text-sm text-neutral-500">
-                  下一步将实现章节和课时的添加、编辑、排序功能
-                </p>
-              </div>
+              <p className="text-sm text-neutral-600 mb-4">
+                组织课程内容，添加章节和课时
+              </p>
+              
+              {/* 章节编辑器 */}
+              <ChapterEditor
+                chapters={[]}
+                onChange={(chapters) => {
+                  console.log('章节更新:', chapters)
+                  // TODO: 保存到 formData
+                }}
+              />
             </div>
           </div>
         )}
