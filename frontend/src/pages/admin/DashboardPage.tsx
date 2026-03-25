@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 // 模拟数据（后续从 API 获取）
 const dashboardData = {
@@ -173,10 +174,30 @@ export default function DashboardPage() {
           <h3 className="text-lg font-bold text-neutral-900 mb-4">
             📈 学员增长趋势
           </h3>
-          <div className="h-64 flex items-center justify-center bg-neutral-50 rounded-lg">
-            <p className="text-neutral-500 text-sm">
-              [折线图：近 7 天学员注册数]
-            </p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dashboardData.growthData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" stroke="#6b7280" tick={{ fontSize: 12 }} />
+                <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="users" 
+                  stroke="#2563eb" 
+                  strokeWidth={3}
+                  dot={{ fill: '#2563eb', r: 5 }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
           <div className="mt-4 grid grid-cols-7 gap-2">
             {dashboardData.growthData.map((item, index) => (
@@ -197,10 +218,28 @@ export default function DashboardPage() {
           <h3 className="text-lg font-bold text-neutral-900 mb-4">
             💰 收入统计
           </h3>
-          <div className="h-64 flex items-center justify-center bg-neutral-50 rounded-lg">
-            <p className="text-neutral-500 text-sm">
-              [柱状图：近 7 天收入]
-            </p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dashboardData.revenueData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" stroke="#6b7280" tick={{ fontSize: 12 }} />
+                <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }} 
+                  formatter={(value) => [`¥${value.toLocaleString()}`, '收入']}
+                />
+                <Bar 
+                  dataKey="revenue" 
+                  fill="#10b981"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
           <div className="mt-4 grid grid-cols-7 gap-2">
             {dashboardData.revenueData.map((item, index) => (
