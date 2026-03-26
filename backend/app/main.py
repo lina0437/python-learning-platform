@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.api.api_v1 import api_router
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -22,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 健康检查接口
+# 根路径
 @app.get("/")
 def read_root():
     return {
@@ -31,16 +32,8 @@ def read_root():
         "status": "running"
     }
 
-# 健康检查
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
-
-# TODO: 后续会添加的接口
-# - 用户注册/登录
-# - 课程管理
-# - 代码执行
-# - 打卡系统
+# 包含 API v1 路由
+app.include_router(api_router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn

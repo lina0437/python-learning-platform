@@ -1,50 +1,37 @@
-from pydantic_settings import BaseSettings
-from typing import List
+"""
+应用配置
+"""
 import os
+from dotenv import load_dotenv
 
+# 加载环境变量
+load_dotenv()
 
-class Settings(BaseSettings):
-    # App
-    APP_NAME: str = "Python Learning Platform"
+class Settings:
+    """应用设置"""
+    
+    # 应用配置
+    APP_NAME: str = "Python 编程学习平台"
     DEBUG: bool = True
     
-    # Database
-    # 支持 PostgreSQL 或 SQLite (开发模式)
-    DATABASE_URL: str = ""
+    # API 配置
+    API_V1_PREFIX: str = "/api/v1"
     
-    # Redis (可选，开发模式可用内存替代)
-    REDIS_URL: str = ""
+    # CORS 配置
+    ALLOWED_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ]
     
-    # Auth
-    SECRET_KEY: str = "dev-secret-key-change-in-production"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    # OSS 配置
+    OSS_ENDPOINT: str = os.getenv("OSS_ENDPOINT", "oss-cn-beijing.aliyuncs.com")
+    OSS_BUCKET: str = os.getenv("OSS_BUCKET", "python-learning-platform")
+    OSS_ACCESS_KEY_ID: str = os.getenv("OSS_ACCESS_KEY_ID", "")
+    OSS_ACCESS_KEY_SECRET: str = os.getenv("OSS_ACCESS_KEY_SECRET", "")
     
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
-    
-    # Judge0 (Code Execution)
-    JUDGE0_API_URL: str = ""
-    
-    # 跳过代码执行 (开发模式)
-    SKIP_CODE_EXECUTION: bool = False
-    
-    # Stripe/Payment (later)
-    STRIPE_SECRET_KEY: str = ""
-    
-    class Config:
-        env_file = ".env"
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        
-        # 自动检测：如果 DATABASE_URL 为空，使用 SQLite
-        if not self.DATABASE_URL:
-            self.DATABASE_URL = "sqlite:///./python_learning.db"
-        
-        # 自动检测：如果 REDIS_URL 为空，使用内存
-        if not self.REDIS_URL:
-            self.REDIS_URL = "memory://"
-
+    # 数据库配置
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./python_learning_platform.db")
 
 settings = Settings()
